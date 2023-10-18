@@ -1,62 +1,89 @@
 package todoservice
 
 import (
-	"errors"
+	"database/sql"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type todo struct {
-	Id        string `json:"id"`
+type Todo struct {
+	Id        int    `json:"id"`
 	Item      string `json:"item"`
 	Completed bool   `json:"completed"`
 }
 
-var todos = []todo{
-	{Id: "1", Item: "read book", Completed: false},
-	{Id: "2", Item: "play football", Completed: false},
-	{Id: "3", Item: "listen music", Completed: false},
-}
+var db *sql.DB
 
-func GetTodos(context *gin.Context) {
-	context.IndentedJSON(http.StatusOK, todos)
-}
-
-func GetTodosById(context *gin.Context) {
-	newTodo, err := getTodo(context.Param("id"))
+func GetTodos(c *gin.Context) {
+	rows, err := db.Query("SELECT id, item, completed FROM todos")
 	if err != nil {
-		context.IndentedJSON(http.StatusNotFound, gin.H{"message": "todo not found"})
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to retrieve todos"})
 		return
 	}
-	context.IndentedJSON(http.StatusOK, newTodo)
-}
+	defer rows.Close()
 
-func getTodo(id string) (*todo, error) {
-	for i, t := range todos {
-		if t.Id == id {
-			return &todos[i], nil
+	var todos []Todo
+	for rows.Next() {
+		var t Todo
+		if err := rows.Scan(&t.Id, &t.Item, &t.Completed); err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to retrieve todos"})
+			return
 		}
+		todos = append(todos, t)
 	}
-	return nil, errors.New("todo not found")
+
+	c.IndentedJSON(http.StatusOK, todos)
 }
 
-func AddTodos(context *gin.Context) {
-	var newTodo todo
-	if err := context.BindJSON(&newTodo); err != nil {
-		return
-	}
-	todos = append(todos, newTodo)
-	context.IndentedJSON(http.StatusCreated, newTodo)
-}
+func GetTodoById(c *gin.Context) {
+	id := c.Param("id")
 
-func UpdateTodosById(context *gin.Context) {
-	id := context.Param("id")
-	newTodo, err := getTodo(id)
+	var t Todo
+	err := db.QueryRow("SELECT id, item, completed FROM todos WHERE id = $1", id).Scan(&t.Id, &t.Item, &t.Completed)
 	if err != nil {
-		context.IndentedJSON(http.StatusNotFound, gin.H{"message": "todo not found"})
+		if err == sql.ErrNoRows {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"message": "todo not found"})
+		} else {
+			log.Println(err)
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to retrieve todo"})
+		}
 		return
 	}
-	newTodo.Completed = !newTodo.Completed
-	context.IndentedJSON(http.StatusOK, newTodo)
+
+	c.IndentedJSON(http.StatusOK, t)
+}
+
+func AddTodo(c *gin.Context) {
+	var t Todo
+	if err := c.BindJSON(&t); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid request"})
+		return
+	}
+
+	err := db.QueryRow("INSERT INTO todos(item, completed) VALUES($1, $2) RETURNING id", t.Item, t.Completed).Scan(&t.Id)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to add todo"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusCreated, t)
+}
+
+func UpdateTodoById(c *gin.Context) {
+	id := c.Param("id")
+
+	var t Todo
+	err := db.QueryRow("UPDATE todos SET completed = NOT completed WHERE id = $1 RETURNING id, item, completed", id).Scan(&t.Id, &t.Item, &t.Completed)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to update todo"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, t)
 }
