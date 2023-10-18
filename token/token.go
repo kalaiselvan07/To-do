@@ -1,10 +1,10 @@
 package token
 
 import (
-	"models"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	models "github.com/kalaiselvan07/todo/models"
 )
 
 const (

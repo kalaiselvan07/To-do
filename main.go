@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	models "github.com/kalaiselvan07/todo/models"
 	"github.com/kalaiselvan07/todo/token"
 )
 
@@ -69,10 +70,9 @@ func login(context *gin.Context) {
 	if err := context.ShouldBindJSON(&loginObj); err != nil {
 		log.Fatal("Bad request")
 	}
-
 	var claims = &models.JwtClaims{}
 	claims.CompanyId = "companyId"
-	claims.Username = loginObj.Username
+	claims.Username = loginObj.UserName
 	claims.Roles = []int{1, 2}
 
 	var tokenCreationTime = time.Now().UTC()
@@ -83,11 +83,7 @@ func login(context *gin.Context) {
 		log.Fatal("Token not created")
 	}
 
-	context.AbortWithStatusJSON(http.StatusOK, models.Response{
-		Data:    tokenString,
-		Status:  http.StatusOK,
-		Message: "Token created",
-	})
+	context.IndentedJSON(http.StatusOK, gin.H{"token": tokenString})
 }
 
 func main() {
