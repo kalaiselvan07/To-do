@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kalaiselvan07/todo/pgdatabase/database"
+	"github.com/kalaiselvan07/todo/pgdatabase"
 )
 
 type Todo struct {
@@ -16,7 +16,7 @@ type Todo struct {
 }
 
 func GetTodos(c *gin.Context) {
-	rows, err := database.DB.Query("SELECT id, item, completed FROM todos")
+	rows, err := pgdatabase.DB.Query("SELECT id, item, completed FROM todos")
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to retrieve todos"})
@@ -42,7 +42,7 @@ func GetTodoById(c *gin.Context) {
 	id := c.Param("id")
 
 	var t Todo
-	err := database.DB.QueryRow("SELECT id, item, completed FROM todos WHERE id = $1", id).Scan(&t.Id, &t.Item, &t.Completed)
+	err := pgdatabase.DB.QueryRow("SELECT id, item, completed FROM todos WHERE id = $1", id).Scan(&t.Id, &t.Item, &t.Completed)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.IndentedJSON(http.StatusNotFound, gin.H{"message": "todo not found"})
@@ -63,7 +63,8 @@ func AddTodo(c *gin.Context) {
 		return
 	}
 
-	err := database.DB.QueryRow("INSERT INTO todos(item, completed) VALUES($1, $2) RETURNING id", t.Item, t.Completed).Scan(&t.Id)
+	// Assuming id is auto-incremented in the database
+	err := pgdatabase.DB.QueryRow("INSERT INTO todos(item, completed) VALUES($1, $2) RETURNING id", t.Item, t.Completed).Scan(&t.Id)
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to add todo"})
@@ -77,7 +78,7 @@ func UpdateTodoById(c *gin.Context) {
 	id := c.Param("id")
 
 	var t Todo
-	err := database.DB.QueryRow("UPDATE todos SET completed = NOT completed WHERE id = $1 RETURNING id, item, completed", id).Scan(&t.Id, &t.Item, &t.Completed)
+	err := pgdatabase.DB.QueryRow("UPDATE todos SET completed = NOT completed WHERE id = $1 RETURNING id, item, completed", id).Scan(&t.Id, &t.Item, &t.Completed)
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed to update todo"})
