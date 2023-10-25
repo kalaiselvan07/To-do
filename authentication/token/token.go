@@ -5,7 +5,7 @@ import (
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	models "github.com/kalaiselvan07/todo/authentication/models"
+	models "authentication/models"
 )
 
 const (
@@ -40,7 +40,7 @@ func getTokenFromString(tokenString string, claims *models.JwtClaims) (*jwt.Toke
 	})
 }
 
-func GenrateToken(claims *models.JwtClaims, expirationTime time.Time) (string, error) {
+func GenerateToken(claims *models.JwtClaims, expirationTime time.Time) (string, error) {
 	claims.ExpiresAt = expirationTime.Unix()
 	claims.IssuedAt = time.Now().UTC().Unix()
 	claims.Issuer = ip
