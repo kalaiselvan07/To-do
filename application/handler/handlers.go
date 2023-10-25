@@ -278,5 +278,10 @@ func AuthorizeRequest(role string) gin.HandlerFunc {
 			return
 		}
 		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusAccepted {
+			context.IndentedJSON(http.StatusUnauthorized, gin.H{"message": "unauthorized request"})
+			context.Abort()
+			return
+		}
 	}
 }

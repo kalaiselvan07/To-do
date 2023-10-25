@@ -39,6 +39,7 @@ func AuthorizationMiddleware(context *gin.Context) {
 		context.Abort()
 		return
 	}
+	context.IndentedJSON(http.StatusAccepted, nil)
 }
 
 func main() {
