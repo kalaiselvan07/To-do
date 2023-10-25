@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  authn:
+    image: docselvan/authn
+    container_name: authn
+    ports:
+      - "8088:8088"
+    networks:
+      - todo-network
+
+  authz:
+    image: docselvan/authz
+    container_name: authz
+    ports:
+      - "8089:8089"
+    networks:
+      - todo-network
+
+  app:
+    image: docselvan/app
+    container_name: app
+    ports:
+      - "8087:8087"
+    networks:
+      - todo-network
+
+networks:
+  todo-network:
+    driver: bridge

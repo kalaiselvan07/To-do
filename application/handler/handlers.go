@@ -180,7 +180,7 @@ func UpdateTodoById(c *gin.Context) {
 
 func Authenticate(c *gin.Context) {
 	reqBody := c.Request.Body
-	url := "http://localhost:8088/authenticate"
+	url := "http://authn:8088/authenticate"
 	resp, err := http.Post(url, "application/json", reqBody)
 	if err != nil {
 		log.Printf("Error: %s", err)
@@ -210,7 +210,7 @@ func Authenticate(c *gin.Context) {
 func ValidateToken() gin.HandlerFunc {
 	return func(context *gin.Context) {
 
-		validationEndpoint := "http://localhost:8088/validate"
+		validationEndpoint := "http://authn:8088/validate"
 		apiKey := context.GetHeader("apikey")
 
 		req, err := http.NewRequest("POST", validationEndpoint, nil)
@@ -260,7 +260,7 @@ func AuthorizeRequest(role string) gin.HandlerFunc {
 			return
 		}
 
-		baseURL := "http://localhost:8089/authorize/"
+		baseURL := "http://authz:8089/authorize/"
 		req, err := http.NewRequest("POST", baseURL+role, bytes.NewBuffer(claimsBytes))
 		if err != nil {
 			log.Printf("Error creating request: %s", err)
